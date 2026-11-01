@@ -16,3 +16,6 @@ After:
 Why: <one sentence>
 ```
 
+## 2026-11-02T00:03:00Z — after round 0
+
+No changes. Probers followed the protocol and the unresolved items need round-two targeting, not better instructions.
