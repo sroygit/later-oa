@@ -84,6 +84,7 @@
   .row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
   .row input[name=task] { flex: 1 1 220px; }
   .hide { display: none; }
+  tr.pend { opacity: .5; }
 </style>
 </head>
 <body>
@@ -93,7 +94,8 @@
     <button id="tab-p" class="on" onclick="show('p')">Projects</button>
     <button id="tab-s" onclick="show('s')">Portfolio</button>
   </nav>
-  <span class="mute" id="stamp" style="margin-left:auto"></span>
+  <button class="btn" style="margin-left:auto" onclick="refresh()">Refresh</button>
+  <span class="mute" id="stamp"></span>
 </header>
 <p id="err"></p>
 
@@ -125,7 +127,7 @@
 
 <script>
 const STATUSES = ["kickoff", "wip", "blocked", "wrapped", "dropped"];
-let projects = [], picked = null, tab = "p";
+let projects = [], picked = null, tab = "p", drafts = 0;
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
@@ -154,11 +156,55 @@ async function call(method, path, body) {
   return data;
 }
 
-// run an action, then reload; keeps one error surface for everything
-async function act(fn) {
+// ---- shapes ---------------------------------------------------------------
+// GET /ui/* comes pre-normalised, but the POST routes answer with the API's own
+// row (epoch-ms `by`/`updated_at`, no `due`/`updated`). Everything that lands in
+// `projects` goes through these, so the page only ever sees one shape.
+const dayOf = v => {
+  if (v === null || v === undefined || v === "") return null;
+  const d = new Date(typeof v === "number" ? v : Number(v));
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+};
+const asTodo = t => ({
+  id: t.id,
+  task: String(t.task == null ? "" : t.task),
+  who: String(t.who == null ? "" : t.who),
+  done: !!t.done,
+  due: "due" in t ? t.due : dayOf(t.by),
+});
+const asProject = p => ({
+  id: p.id,
+  title: String(p.title == null ? "" : p.title),
+  description: p.description || "",
+  status: p.status || null,
+  updated: "updated" in p ? p.updated : dayOf(p.updated_at),
+  items: (p.items || []).map(asTodo),
+});
+
+const projectOf = pid => projects.find(p => p.id === pid);
+
+function render() {
+  drawList();
+  drawDetail();
+  $("stamp").textContent = projects.length + " projects";
+}
+
+// Optimistic write: the caller has already changed local state, so paint it,
+// then send. On success `patch` folds in the server's own copy of the row; on
+// failure `undo` puts the change back and the error bar says why. Undo is
+// per-change rather than a whole-project snapshot, so two writes in flight
+// cannot clobber each other.
+async function write(send, patch, undo) {
   fail("");
-  try { await fn(); await load(); }
-  catch (e) { fail(e.message); }
+  render();
+  try {
+    const res = await send();
+    if (patch) patch(res);
+  } catch (e) {
+    undo();
+    fail(e.message);
+  }
+  render();
 }
 
 function show(which) {
@@ -170,13 +216,18 @@ function show(which) {
   if (which === "s") loadSummary();
 }
 
+// The only full re-fetch left: first paint, after creating a project, and the
+// Refresh button, which is how other people's changes get pulled in.
 async function load() {
-  projects = await call("GET", "/ui/projects");
+  projects = (await call("GET", "/ui/projects")).map(asProject);
   if (!projects.some(p => p.id === picked)) picked = projects.length ? projects[0].id : null;
-  drawList();
-  drawDetail();
-  $("stamp").textContent = projects.length + " projects";
+  render();
   if (tab === "s") loadSummary();
+}
+
+function refresh() {
+  fail("");
+  load().catch(e => fail(e.message));
 }
 
 function drawList() {
@@ -189,17 +240,20 @@ function drawList() {
 function pick(id) { picked = id; drawList(); drawDetail(); }
 
 function drawDetail() {
-  const p = projects.find(x => x.id === picked);
+  const p = projectOf(picked);
   if (!p) { $("detail").innerHTML = `<p class="mute">Pick a project, or create one.</p>`; return; }
+  // Re-rendering replaces the add-todo inputs, so carry half-typed values over.
+  const kept = ["t-task", "t-who", "t-due"].map(id => ($(id) ? $(id).value : ""));
   const items = p.items.slice().sort((a, b) => (a.done - b.done) || String(a.due).localeCompare(String(b.due)));
   const rows = items.map(t => `
-    <tr class="todo">
-      <td><input type="checkbox" ${t.done ? "checked" : ""}
+    <tr class="todo ${t.pending ? "pend" : ""}">
+      <td><input type="checkbox" ${t.done ? "checked" : ""} ${t.pending ? "disabled" : ""}
            onchange="markTodo('${p.id}','${t.id}', this.checked)"></td>
       <td class="${t.done ? "done" : ""}">${esc(t.task)}</td>
       <td class="mute">${esc(t.who || "unassigned")}</td>
       <td class="mute ${!t.done && t.due && t.due < today() ? "late" : ""}">${esc(t.due || "—")}</td>
-      <td><button class="x" title="Delete" onclick="delTodo('${p.id}','${t.id}')">&times;</button></td>
+      <td><button class="x" title="Delete" ${t.pending ? "disabled" : ""}
+           onclick="delTodo('${p.id}','${t.id}')">&times;</button></td>
     </tr>`).join("");
 
   $("detail").innerHTML = `
@@ -221,28 +275,83 @@ function drawDetail() {
       <input id="t-due" type="date">
       <button class="btn go" onclick="addTodo('${p.id}')">Add todo</button>
     </div>`;
+  ["t-task", "t-who", "t-due"].forEach((id, i) => { if (kept[i] && $(id)) $(id).value = kept[i]; });
 }
 
+// Creating a project still reloads: it needs the server's id and list ordering.
 function createProject() {
   const title = $("n-title").value.trim();
   if (!title) { fail("Title is required."); return; }
-  act(async () => {
-    const made = await call("POST", "/ui/projects",
-      { title, description: $("n-desc").value, status: $("n-status").value });
-    picked = made.id;
-    $("n-title").value = ""; $("n-desc").value = "";
-  });
+  fail("");
+  call("POST", "/ui/projects",
+    { title, description: $("n-desc").value, status: $("n-status").value })
+    .then(made => {
+      picked = made.id;
+      $("n-title").value = ""; $("n-desc").value = "";
+      return load();
+    })
+    .catch(e => fail(e.message));
 }
 
-const saveStatus = pid => act(() => call("POST", `/ui/projects/${pid}/status`, { status: $("st").value }));
-const markTodo = (pid, tid, done) => act(() => call("POST", `/ui/projects/${pid}/todos/${tid}/done`, { done }));
-const delTodo = (pid, tid) => act(() => call("DELETE", `/ui/projects/${pid}/todos/${tid}`));
+function saveStatus(pid) {
+  const p = projectOf(pid);
+  if (!p) return;
+  const status = $("st").value, was = p.status;
+  p.status = status;
+  return write(
+    () => call("POST", `/ui/projects/${pid}/status`, { status }),
+    res => {
+      const pending = p.items.filter(t => t.pending);   // keep todos still in flight
+      Object.assign(p, asProject(res));
+      p.items.push(...pending);
+    },
+    () => { p.status = was; },
+  );
+}
+
+function markTodo(pid, tid, done) {
+  const p = projectOf(pid), t = p && p.items.find(i => i.id === tid);
+  if (!t) return;
+  const was = t.done;
+  t.done = done;
+  return write(
+    () => call("POST", `/ui/projects/${pid}/todos/${tid}/done`, { done }),
+    res => Object.assign(t, asTodo(res)),
+    () => { t.done = was; },
+  );
+}
 
 function addTodo(pid) {
+  const p = projectOf(pid);
   const task = $("t-task").value.trim();
   if (!task) { fail("Task is required."); return; }
-  act(() => call("POST", `/ui/projects/${pid}/todos`,
-    { task, who: $("t-who").value, due: $("t-due").value || null }));
+  if (!p) return;
+  // Shown straight away under a placeholder id; its row stays inert until the
+  // server hands back the real one.
+  const draft = {
+    id: "draft_" + (++drafts), task, who: $("t-who").value,
+    done: false, due: $("t-due").value || null, pending: true,
+  };
+  p.items.push(draft);
+  $("t-task").value = ""; $("t-who").value = ""; $("t-due").value = "";
+  return write(
+    () => call("POST", `/ui/projects/${pid}/todos`,
+      { task: draft.task, who: draft.who, due: draft.due }),
+    res => { Object.assign(draft, asTodo(res)); delete draft.pending; },
+    () => { const i = p.items.indexOf(draft); if (i >= 0) p.items.splice(i, 1); },
+  );
+}
+
+function delTodo(pid, tid) {
+  const p = projectOf(pid);
+  const at = p ? p.items.findIndex(t => t.id === tid) : -1;
+  if (at < 0) return;
+  const gone = p.items.splice(at, 1)[0];
+  return write(
+    () => call("DELETE", `/ui/projects/${pid}/todos/${tid}`),
+    res => { if (res && res.removed && res.removed !== tid) refresh(); },
+    () => p.items.splice(Math.min(at, p.items.length), 0, gone),
+  );
 }
 
 async function loadSummary() {
