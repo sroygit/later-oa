@@ -8,3 +8,5 @@
 6. **Andy, 2 min.** `.venv/bin/uvicorn webhook:app --port 8787`, then `curl "localhost:8787/complete?project=spring&todo=blog"`. Show `ZAPIER.md`.
 7. **Betty, 1 min.** `.venv/bin/streamlit run app.py`. Tick a checkbox.
 8. **What I'd do with a day, 1 min.** `DECISIONS.md` last section.
+
+If Later restarted the API before the demo: `.venv/bin/python restore.py backups/<latest>.json`. Take a backup right before: `.venv/bin/python backup.py`.

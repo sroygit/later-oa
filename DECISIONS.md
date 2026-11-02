@@ -26,6 +26,8 @@ One thin client, four surfaces. `projects_client.py` absorbs every quirk (path-s
 4. **Andy: webhook shim** rather than "call the API directly". The API wants ids in the path and a literal `"yes"` flag; a Zap would need two lookups first and the list only pages 5 at a time. The shim takes names in query, form, or JSON. `ZAPIER.md` has the exact step config.
 5. **Betty: Streamlit.** Last because it's the least leveraged and the most time-hungry. It covers create, status change, add/complete/delete todo, and a portfolio tab. Hand-off is `streamlit run app.py`.
 
+6. **The in-memory reset: not fought, made a non-event.** `backup.py` dumps everything to JSON; `restore.py` replays it (projects, todos, assignees, due dates, done flags) into a fresh API, skipping titles that already exist. Ids come back different, which is fine because every surface here resolves by name. The digest's snapshot store is a second, automatic backup.
+
 ## What I skipped and why
 
 - **Auth, tests, observability.** Not graded, said so in the brief.

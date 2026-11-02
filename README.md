@@ -20,6 +20,7 @@ uv pip install --python .venv/bin/python httpx fastmcp streamlit fastapi uvicorn
 | Carlos | `digest.py` — weekly digest, markdown or Slack. Change detection is snapshot-based (`snapshots.py` stores each run's full project list in `snapshots.sqlite` and diffs it), not `updated_at`, which only moves on `touch` — so edits made outside this client still show up. `--days N` sets the window. | `.venv/bin/python digest.py [--slack] [--days 7]` |
 | Betty | `betty.html` — one self-contained HTML file, served by the shim so it can call the API (the API sends no CORS headers, so a `file://` page can't) | `.venv/bin/uvicorn webhook:app --port 8787`, then open <http://localhost:8787> |
 | Betty (earlier) | `app.py` — the first version, Streamlit. Kept for reference; `betty.html` replaces it | `.venv/bin/streamlit run app.py` |
+| anyone | `backup.py` / `restore.py` — the API is in memory; dump to JSON, replay after a reset | `.venv/bin/python backup.py` then `.venv/bin/python restore.py backups/<file>.json` |
 | Andy | `webhook.py` + `ZAPIER.md` — name-based shim for no-code tools | `.venv/bin/uvicorn webhook:app --port 8787` |
 
 ## How the API was reverse-engineered
