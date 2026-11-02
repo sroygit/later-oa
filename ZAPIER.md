@@ -5,6 +5,8 @@ So run the shim and point your tool at it with plain names.
 
 ## 1. Run the shim and expose it
 
+(The same process also serves Betty's page at <http://localhost:8787>; Andy's routes below are unaffected.)
+
 ```
 .venv/bin/uvicorn webhook:app --port 8787
 ngrok http 8787        # copy the https URL it prints

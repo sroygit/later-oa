@@ -42,6 +42,7 @@ One thin client, four surfaces. `projects_client.py` absorbs every quirk (path-s
 - `by` (due date) accepts any JSON value verbatim; a string date is stored as a string. The client always sends epoch ms and tolerates strings on read.
 - `mark` takes `flag: "yes"|"no"`, not a boolean, and sets rather than toggles.
 - **Only `touch` moves `updated_at`.** Modify, add, mark, and yank all leave it frozen at creation time (round two, verified by the client's own test). So `updated_at` is not "last changed", it is "last touched". The client touches after every mutation, which makes Carlos's "changed this week" and "stuck" honest for anything that goes through this client. Changes made by raw curl are invisible to `updated_at`, which is why the digest now derives change from its own snapshots (`snapshots.py`) instead; `updated_at` is only the first-run fallback.
+- A todo created without a due date gets `by` = request time, not null. So "no due date" is indistinguishable from "due now", and such a todo shows as overdue tomorrow. Neither the client nor the UI invents a sentinel; the digest and the UI show what the API stores. Fix on the API side is the right fix.
 - Todo lookups are scoped to the project in the path: a todo id from project A via project B's path is a 404, so the shim's name resolution can't cross-wire projects.
 
 ## What I'd do with a full day
