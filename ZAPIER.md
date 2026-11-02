@@ -5,7 +5,7 @@ So run the shim and point your tool at it with plain names.
 
 ## 1. Run the shim and expose it
 
-(The same process also serves Betty's page at <http://localhost:8787>; Andy's routes below are unaffected.)
+(The same process also serves Betty's page at <http://localhost:8787> and Dan's MCP server at `/mcp`; Andy's routes below are unaffected.)
 
 ```
 .venv/bin/uvicorn webhook:app --port 8787
@@ -27,7 +27,15 @@ Optional: add `done` = `no` to un-complete instead.
 
 ### Add a todo instead
 
-Same action, URL `/add`, fields `project`, `task`, optional `who`, optional `due` (ISO date `2026-11-07`).
+Same action, URL `/add`, fields `project`, `task`, optional `who`, optional `due`.
+
+`due` can be the raw text from the trigger — you do not have to format it. ISO (`2026-11-07`),
+epoch ms, or plain English: `next Friday`, `tomorrow`, `in 3 days`, `end of month`, `Nov 7`.
+Weekday names mean the *next* one, so a Zap that fires on a Friday and maps `due` = `Friday`
+gets the following Friday, not today. Map the whole Slack message fragment straight in.
+If the text isn't a date at all, the shim answers `400 could not parse due date: '<text>'`,
+so the Zap fails loudly instead of silently writing a wrong due date. Leave `due` empty for
+no due date.
 
 ### Trigger on overdue todos
 

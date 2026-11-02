@@ -4,7 +4,9 @@ Why it exists: the real API needs ids as path segments and a literal "yes"/"no" 
 no-code tools handle badly. This shim takes names instead of ids and accepts query string,
 form, or JSON, so a "Webhooks by Zapier" step with two fields just works.
 
-It also serves Betty's single-file UI at / (see the /ui/ routes at the bottom).
+It also serves Betty's single-file UI at / (see the /ui/ routes at the bottom) and Dan's
+MCP server over streamable HTTP at /mcp (mounted at the bottom from mcp_server.py), so
+`uvicorn webhook:app` is the only process any of the three personas needs.
 
 Run:   .venv/bin/uvicorn webhook:app --port 8787
 Expose to Zapier:  ngrok http 8787   (or cloudflared tunnel --url http://localhost:8787)
@@ -19,10 +21,26 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 
+from dates import parse_due
+from mcp_server import mcp
 from projects_client import STATUSES, ApiError, Projects, from_ms
 
-app = FastAPI(title="Later Projects webhook shim")
+# fastmcp's streamable-http transport needs its own lifespan to run (session manager,
+# task group), so FastAPI has to adopt it; without this every /mcp request 500s.
+mcp_app = mcp.http_app(path="/mcp")
+
+app = FastAPI(title="Later Projects webhook shim", lifespan=mcp_app.lifespan)
 api = Projects()
+
+
+def due_ms(value) -> int | None:
+    """Due-date text -> epoch ms. Empty is fine (no due date); garbage is a 400."""
+    if value is None or str(value).strip() == "":
+        return None
+    ms = parse_due(value)
+    if ms is None:
+        raise HTTPException(400, f"could not parse due date: {str(value)!r}")
+    return ms
 
 
 async def params(req: Request) -> dict[str, Any]:
@@ -71,14 +89,16 @@ async def complete(req: Request):
 
 @app.api_route("/add", methods=["GET", "POST"])
 async def add(req: Request):
-    """Add a todo. Fields: project, task, who (optional), due (optional ISO date)."""
+    """Add a todo. Fields: project, task, who (optional), due (optional - ISO date or
+    natural language like "Friday", "tomorrow", "in 2 weeks")."""
     q = await params(req)
     if "project" not in q or "task" not in q:
         raise HTTPException(400, "need project and task")
     p = resolve_project(q["project"])
+    by = due_ms(q.get("due"))
     try:
         return {"ok": True, "project": p["title"],
-                "todo": api.add_item(p["id"], q["task"], who=q.get("who", ""), by=q.get("due") or None)}
+                "todo": api.add_item(p["id"], q["task"], who=q.get("who", ""), by=by)}
     except (ApiError, ValueError) as e:
         raise HTTPException(400, str(e))
 
@@ -195,8 +215,8 @@ async def ui_add_todo(pid: str, req: Request):
     task = str(q.get("task", "")).strip()
     if not task:
         raise HTTPException(400, "task is required")
-    return guard(lambda: api.add_item(pid, task, who=str(q.get("who") or ""),
-                                      by=q.get("due") or None))
+    by = due_ms(q.get("due"))
+    return guard(lambda: api.add_item(pid, task, who=str(q.get("who") or ""), by=by))
 
 
 @app.post("/ui/projects/{pid}/todos/{tid}/done")
@@ -209,3 +229,11 @@ async def ui_mark_todo(pid: str, tid: str, req: Request):
 @app.delete("/ui/projects/{pid}/todos/{tid}")
 def ui_yank_todo(pid: str, tid: str):
     return guard(lambda: api.yank(pid, tid))
+
+
+# ---- Dan's MCP server, same process ----------------------------------------
+# mcp_server.py still runs standalone over stdio (`python mcp_server.py`, which is what
+# .mcp.json uses); this mount exposes the same nine tools over streamable HTTP at /mcp:
+#   claude mcp add --transport http later-projects-http http://localhost:8787/mcp
+# Mounted last so every route above keeps precedence over the catch-all mount.
+app.mount("/", mcp_app)

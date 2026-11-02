@@ -1,7 +1,14 @@
 """MCP server over projects_client — lets Dan (and Carlos) talk to projects through any MCP-capable LLM.
 
-Run:  .venv/bin/python mcp_server.py          (stdio transport)
-Register in Claude Code:  claude mcp add later-projects -- "$PWD/.venv/bin/python" "$PWD/mcp_server.py"
+This module only defines the tools. Two ways to serve them:
+  stdio:  .venv/bin/python mcp_server.py        (what .mcp.json uses)
+  http:   .venv/bin/uvicorn webhook:app --port 8787   -> http://localhost:8787/mcp
+          (webhook.py imports `mcp` from here and mounts it, so Andy's shim, Betty's
+           page and Dan's tools are one process)
+
+Register in Claude Code:
+  claude mcp add later-projects -- "$PWD/.venv/bin/python" "$PWD/mcp_server.py"
+  claude mcp add --transport http later-projects-http http://localhost:8787/mcp
 """
 from __future__ import annotations
 
@@ -9,6 +16,7 @@ from datetime import datetime
 
 from fastmcp import FastMCP
 
+from dates import parse_due
 from projects_client import STATUSES, ApiError, Projects, from_ms
 
 mcp = FastMCP("later-projects")
@@ -73,10 +81,16 @@ def update_project(project: str, title: str | None = None, description: str | No
 
 @mcp.tool
 def add_todo(project: str, task: str, due: str | None = None, who: str | None = None) -> dict:
-    """Add a todo to a project. due is an ISO date like 2026-11-07 (resolve 'Friday' to a date first).
-    who is the person's name; use the user's own name for 'assign it to me'."""
+    """Add a todo to a project. due is an ISO date or natural language like 'Friday',
+    'tomorrow', 'in 2 weeks'. who is the person's name; use the user's own name for
+    'assign it to me'."""
     p = _resolve(project)
-    return _todo(api.add_item(p["id"], task, who=who or "", by=due))
+    by = None
+    if due is not None and str(due).strip():
+        by = parse_due(due)
+        if by is None:
+            raise ValueError(f"could not parse due date: {str(due)!r}")
+    return _todo(api.add_item(p["id"], task, who=who or "", by=by))
 
 
 @mcp.tool
