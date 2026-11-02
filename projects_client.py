@@ -5,6 +5,7 @@ Normalises the quirks found in recon (see API_NOTES.md) so nothing downstream se
 - list is paginated with a fixed page size of 5; list_projects() walks every page
 - dates are epoch milliseconds; this client accepts date/datetime/ISO strings and converts
 - mark takes a literal "yes"/"no" flag and SETS done, it does not toggle
+- only touch bumps updated_at; modify/add/mark/yank do not, so every mutation here touches afterwards
 - status is a case-sensitive enum
 """
 from __future__ import annotations
@@ -115,18 +116,30 @@ class Projects:
     def items(self, pid: str) -> list[dict]:
         return self._req("GET", f"/api/v1/proj/{pid}/items")["items"]
 
-    def add_item(self, pid: str, task: str, who: str = "", by: Any = None) -> dict:
+    # QUIRK: add/mark/yank never bump the project's updated_at either (only touch does),
+    # so each one touches afterwards by default. Pass touch=False for bulk loads.
+
+    def add_item(self, pid: str, task: str, who: str = "", by: Any = None, *, touch: bool = True) -> dict:
         body: dict[str, Any] = {"task": task, "who": who}
         if by is not None:
             body["by"] = to_ms(by)
-        return self._req("POST", f"/api/v1/proj/{pid}/items/add", json=body)
+        out = self._req("POST", f"/api/v1/proj/{pid}/items/add", json=body)
+        if touch:
+            self.touch(pid)
+        return out
 
-    def mark(self, pid: str, tid: str, done: bool = True) -> dict:
-        return self._req("POST", f"/api/v1/proj/{pid}/items/{tid}/mark",
-                         json={"flag": "yes" if done else "no"})
+    def mark(self, pid: str, tid: str, done: bool = True, *, touch: bool = True) -> dict:
+        out = self._req("POST", f"/api/v1/proj/{pid}/items/{tid}/mark",
+                        json={"flag": "yes" if done else "no"})
+        if touch:
+            self.touch(pid)
+        return out
 
-    def yank(self, pid: str, tid: str) -> dict:
-        return self._req("DELETE", f"/api/v1/proj/{pid}/items/{tid}/yank")
+    def yank(self, pid: str, tid: str, *, touch: bool = True) -> dict:
+        out = self._req("DELETE", f"/api/v1/proj/{pid}/items/{tid}/yank")
+        if touch:
+            self.touch(pid)
+        return out
 
     # ---- helpers the personas need -----------------------------------------
 
