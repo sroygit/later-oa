@@ -96,13 +96,16 @@ class Projects:
         return self._req("POST", "/api/v1/proj/new",
                          json={"title": title, "description": description, "status": status})
 
-    def modify(self, pid: str, **fields: Any) -> dict:
-        """Route confirmed in recon round 2. Only title/description/status are meaningful."""
+    def modify(self, pid: str, *, touch: bool = True, **fields: Any) -> dict:
+        """title/description/status are updatable. QUIRK: modify never bumps updated_at, so this
+        touches afterwards by default; otherwise Carlos's "changed this week" misses real edits."""
         if "status" in fields:
             self._check_status(fields["status"])
-        return self._req("PUT", f"/api/v1/proj/{pid}/modify", json=fields)
+        out = self._req("PUT", f"/api/v1/proj/{pid}/modify", json=fields)
+        return self.touch(pid) if touch else out
 
     def touch(self, pid: str) -> dict:
+        """The only call that bumps updated_at. Body is ignored."""
         return self._req("POST", f"/api/v1/proj/{pid}/touch")
 
     def remove(self, pid: str) -> dict:
