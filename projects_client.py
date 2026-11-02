@@ -6,13 +6,17 @@ Normalises the quirks found in recon (see API_NOTES.md) so nothing downstream se
 - dates are epoch milliseconds; this client accepts date/datetime/ISO strings and converts
 - mark takes a literal "yes"/"no" flag and SETS done, it does not toggle
 - only touch bumps updated_at; modify/add/mark/yank do not, so every mutation here touches afterwards
+- the API is in memory: after every write the client dumps everything to backups/latest.json (PROJECTS_AUTOBACKUP=0 disables)
 - status is a case-sensitive enum
 """
 from __future__ import annotations
 
+import json
+import os
 import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -63,8 +67,22 @@ def now_ms() -> int:
 # ---- client ---------------------------------------------------------------
 
 class Projects:
-    def __init__(self, base_url: str = BASE_URL, timeout: float = 20.0):
+    def __init__(self, base_url: str = BASE_URL, timeout: float = 20.0, autobackup: bool | None = None):
         self.http = httpx.Client(base_url=base_url, timeout=timeout)
+        # Every mutation ends in touch(); with autobackup on, touch() also dumps the whole API to
+        # backups/latest.json. The API is in memory, so this is the only thing standing between a
+        # restart and lost work. Set PROJECTS_AUTOBACKUP=0 to turn it off (bulk loads, tests).
+        env = os.environ.get("PROJECTS_AUTOBACKUP")
+        self.autobackup = autobackup if autobackup is not None else env != "0"
+        self.backup_path = Path(os.environ.get("PROJECTS_BACKUP_PATH", "backups/latest.json"))
+
+    def backup(self, path: Path | str | None = None) -> Path:
+        """Dump every project and todo to JSON (what restore.py reads)."""
+        out = Path(path) if path else self.backup_path
+        out.parent.mkdir(parents=True, exist_ok=True)
+        projects = self.list_projects()
+        out.write_text(json.dumps({"taken_at": datetime.now(timezone.utc).isoformat(), "projects": projects}, indent=1))
+        return out
 
     def _req(self, method: str, path: str, *, json: dict | None = None, params: dict | None = None) -> Any:
         r = self.http.request(method, path, json=json, params=params)
@@ -106,11 +124,20 @@ class Projects:
         return self.touch(pid) if touch else out
 
     def touch(self, pid: str) -> dict:
-        """The only call that bumps updated_at. Body is ignored."""
-        return self._req("POST", f"/api/v1/proj/{pid}/touch")
+        """The only call that bumps updated_at. Body is ignored. Also the autobackup hook."""
+        out = self._req("POST", f"/api/v1/proj/{pid}/touch")
+        if self.autobackup:
+            try:
+                self.backup()
+            except Exception as e:  # a failed backup must never fail the write
+                print(f"[projects_client] autobackup failed: {e}")
+        return out
 
     def remove(self, pid: str) -> dict:
-        return self._req("DELETE", f"/api/v1/proj/{pid}/remove")
+        out = self._req("DELETE", f"/api/v1/proj/{pid}/remove")
+        if self.autobackup:
+            self.backup()
+        return out
 
     # todos
     def items(self, pid: str) -> list[dict]:
