@@ -16,7 +16,7 @@ uv pip install --python .venv/bin/python httpx fastmcp streamlit fastapi uvicorn
 | Who | What | Run |
 |---|---|---|
 | everyone | `projects_client.py` — thin wrapper, normalises every quirk | `.venv/bin/python projects_client.py` prints a summary |
-| Dan | `mcp_server.py` — 9 MCP tools (add todo, complete, what's late, summary...) | registered in `.mcp.json`; open Claude Code here and ask "what's late?" |
+| Dan | `mcp_server.py` — 9 MCP tools (add todo, complete, what's late, summary...) | registered in `.mcp.json`; open Claude Code here, approve the server when prompted, ask "what's late?" |
 | Carlos | `digest.py` — weekly digest, markdown or Slack | `.venv/bin/python digest.py [--slack]` |
 | Betty | `app.py` — Streamlit UI, hand-off-able | `.venv/bin/streamlit run app.py` |
 | Andy | `webhook.py` + `ZAPIER.md` — name-based shim for no-code tools | `.venv/bin/uvicorn webhook:app --port 8787` |
