@@ -9,6 +9,18 @@ One thin client, four surfaces. `projects_client.py` absorbs every quirk (path-s
 ## What I built, in leverage order
 
 1. **Recon as a two-tier agent system** (not a person with curl). Four cheap probers in parallel, one expensive synthesizer, one expensive reviewer that rewrites the probers' prompt from their failures, then a narrow second round. `API_NOTES.md` is a deliverable: it is the documentation the brief said doesn't exist, with a citation to raw evidence for every claim.
+
+   How it went, by the numbers (`recon/RUNLOG.md`):
+
+   | | Round 1 | Round 2 (rewritten prompt) |
+   |---|---|---|
+   | Probers | 4 | 3 |
+   | curl calls | 134 | 75 |
+   | Fixtures left undeleted | 5 | 0 |
+   | Endpoints confirmed after synthesis | 10 of 12 | 12 of 12 |
+   | Unresolved items after synthesis | 44 | 5 |
+
+   The reviewer's diagnosis was right: three of four round-one probers burned their budget on the brief's flat paths, because the prompt said "sweep field names" before "try the nested path". Its rewrite put path shape first and capped flat-path attempts at three. Round two probers hit the real routes on their first call every time. Clock cost of the whole agent phase: about 20 minutes, of which I spent maybe 4 reading outputs. The rest of the time I was building the client and the surfaces in parallel.
 2. **Dan: MCP server.** Highest leverage. Nine tools, name-based resolution so "the launch project" works, due dates as ISO strings so the LLM does the "Friday" math. Registered in `.mcp.json`; Claude Code picks it up in this folder. Also gives Carlos a `portfolio_summary` tool for free.
 3. **Carlos: one-command digest.** `digest.py` prints markdown or Slack mrkdwn. "Stuck" = blocked, or has overdue todos, or no update in 7 days with open todos. "Changed this week" = `updated_at` within 7 days. Cron line in the docstring; I did not build a scheduler or a Slack poster.
 4. **Andy: webhook shim** rather than "call the API directly". The API wants ids in the path and a literal `"yes"` flag; a Zap would need two lookups first and the list only pages 5 at a time. The shim takes names in query, form, or JSON. `ZAPIER.md` has the exact step config.
