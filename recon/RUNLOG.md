@@ -38,3 +38,4 @@ Format:
 - 2026-11-02T01:01:32Z | opus-betty2 | files=betty.html | outcome=ok | Mutations in betty.html are now optimistic (local patch + repaint, server row folded in on success, per-change rollback + error bar on failure); project creation still reloads, header Refresh pulls others' edits; 32/32 assertions in a node DOM-stub harness against the live shim.
 - 2026-11-02T01:02:35Z | ORCH | clock=stop elapsed=57m | outcome=ok | All deliverables complete; stopping at 57 of 90 minutes.
 - 2026-11-02T01:08:01Z | ORCH | post-clock restore=merge+verify | outcome=ok | After the 57m stop: restore.py now merges todos into existing projects by task text and verifies the API against the file; tested fresh/damaged/idempotent paths on a fixture, then removed it.
+- 2026-11-02T01:51:48Z | ORCH | post-clock betty=reset-recovery | outcome=ok | Later restarted the API (all 7 seed ids changed); page now reloads and re-selects by title on a stale-id 404. 5/5 stub-test assertions pass.

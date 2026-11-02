@@ -202,9 +202,26 @@ async function write(send, patch, undo) {
     if (patch) patch(res);
   } catch (e) {
     undo();
+    if (isStale(e)) { await recoverFromReset(); return; }
     fail(e.message);
   }
   render();
+}
+
+// The API is in memory and reseeds on restart with fresh ids. A "no such project"
+// on a write means our ids are stale: reload the list, re-select by title, and say so.
+const isStale = e => /no such project/i.test(e && e.message || "");
+
+async function recoverFromReset() {
+  const oldTitle = (projects.find(p => p.id === picked) || {}).title;
+  try {
+    await load();
+    const again = projects.find(p => p.title === oldTitle);
+    if (again) { picked = again.id; render(); }
+    fail("The API was reset (its project ids changed). List reloaded; please redo that change.");
+  } catch (e) {
+    fail("The API was reset and the reload failed: " + e.message);
+  }
 }
 
 function show(which) {
