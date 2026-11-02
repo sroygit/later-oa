@@ -29,11 +29,13 @@ One thin client, four surfaces. `projects_client.py` absorbs every quirk (path-s
 - `take` is clamped to 5 and the response echoes the clamped value.
 - `by` (due date) accepts any JSON value verbatim; a string date is stored as a string. The client always sends epoch ms and tolerates strings on read.
 - `mark` takes `flag: "yes"|"no"`, not a boolean, and sets rather than toggles.
+- **Only `touch` moves `updated_at`.** Modify, add, mark, and yank all leave it frozen at creation time (round two, verified by the client's own test). So `updated_at` is not "last changed", it is "last touched". The client touches after every mutation, which makes Carlos's "changed this week" and "stuck" honest for anything that goes through this client. Changes made by raw curl stay invisible, and that's documented, not hidden.
+- Todo lookups are scoped to the project in the path: a todo id from project A via project B's path is a 404, so the shim's name resolution can't cross-wire projects.
 
 ## What I'd do with a full day
 
 - **Fix the recon prompt before the probers run, not after.** The reviewer's rewrite correctly says "sweep path shapes before field names"; with a day I'd run a third round and measure whether the rewritten prompt actually finds nested routes faster on a fresh API.
 - **Collapse the MCP server and the webhook shim** into one FastAPI app exposing both HTTP and MCP (fastmcp can mount on Starlette). One process for Andy and Dan.
-- **Carlos's "stuck" heuristic needs real signal.** `updated_at` on the project may or may not move when a todo changes (round two tests this). If it doesn't, "stuck" should be computed from todo activity, which means the client needs to diff snapshots over time, so a tiny SQLite cache keyed on the in-memory API's reset.
+- **Carlos's "stuck" signal shouldn't depend on `updated_at` at all.** Round two showed it only moves on `touch`, so anyone writing to the API without this client leaves no trace. With a day I'd have the digest snapshot the full project list to SQLite on each run and compute "changed this week" by diffing snapshots, which works no matter who wrote.
 - **Betty's UI should be a single HTML file**, not Streamlit, so it can be emailed. Streamlit was faster to write, not better to hand off.
 - **Natural-language dates in the shim** ("Friday") so Andy's Zap can pass through whatever the Slack message said.
