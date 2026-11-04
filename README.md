@@ -9,8 +9,6 @@ uv venv --python 3.12 --managed-python .venv
 uv pip install --python .venv/bin/python httpx fastmcp streamlit fastapi uvicorn python-multipart dateparser
 ```
 
-(macOS: Apple's and Homebrew's Pythons both crashed on fastmcp's HMAC call; the uv-managed build works.)
-
 ## The pieces
 
 | Who | What | Run |
