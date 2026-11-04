@@ -1,0 +1,194 @@
+{
+ "taken_at": "2026-11-02T00:43:45.172690+00:00",
+ "projects": [
+  {
+   "description": "Public launch of v3. Coordinate marketing, eng, and CS.",
+   "id": "proj_23315f",
+   "items": [
+    {
+     "by": 1793750085470,
+     "done": false,
+     "id": "todo_9e5e55",
+     "task": "Finalize launch blog post",
+     "who": "betty"
+    },
+    {
+     "by": 1793922885470,
+     "done": false,
+     "id": "todo_76344a",
+     "task": "QA the onboarding flow on staging",
+     "who": "carlos"
+    },
+    {
+     "by": 1793836485470,
+     "done": true,
+     "id": "todo_68ddc7",
+     "task": "Draft launch-day Slack post",
+     "who": "andy"
+    },
+    {
+     "by": 1794095685470,
+     "done": false,
+     "id": "todo_a5c40c",
+     "task": "Update the help center landing page",
+     "who": "dan"
+    }
+   ],
+   "status": "wip",
+   "title": "Spring product launch",
+   "updated_at": 1793577285470
+  },
+  {
+   "description": "Two-week paid pilot. Single tenant. Slack channel #acme-pilot.",
+   "id": "proj_756702",
+   "items": [
+    {
+     "by": 1793663685470,
+     "done": true,
+     "id": "todo_bb91e0",
+     "task": "Send kickoff doc",
+     "who": "dan"
+    },
+    {
+     "by": 1793750085470,
+     "done": false,
+     "id": "todo_1ed113",
+     "task": "Schedule weekly sync",
+     "who": "carlos"
+    },
+    {
+     "by": 1793836485470,
+     "done": false,
+     "id": "todo_c25ab8",
+     "task": "Provision sandbox tenant",
+     "who": "betty"
+    }
+   ],
+   "status": "kickoff",
+   "title": "Enterprise pilot, Acme Co.",
+   "updated_at": 1793577285470
+  },
+  {
+   "description": "Cutover to the new payment processor. Coordinate with finance.",
+   "id": "proj_ad713f",
+   "items": [
+    {
+     "by": 1793404485470,
+     "done": false,
+     "id": "todo_cc8e4e",
+     "task": "Get final sign-off from finance",
+     "who": "carlos"
+    },
+    {
+     "by": 1794182085470,
+     "done": false,
+     "id": "todo_8408ac",
+     "task": "Backfill historical invoices",
+     "who": "betty"
+    }
+   ],
+   "status": "blocked",
+   "title": "Migrate billing to new processor",
+   "updated_at": 1793577285470
+  },
+  {
+   "description": "Get internal teams onto the new AI tooling stack.",
+   "id": "proj_338616",
+   "items": [
+    {
+     "by": 1794009285470,
+     "done": false,
+     "id": "todo_3b73e0",
+     "task": "Run training session for ops",
+     "who": "andy"
+    },
+    {
+     "by": 1793922885470,
+     "done": false,
+     "id": "todo_cccb9a",
+     "task": "Write the FAQ doc",
+     "who": "dan"
+    },
+    {
+     "by": 1794441285470,
+     "done": false,
+     "id": "todo_8900c1",
+     "task": "Collect feedback from beta users",
+     "who": "betty"
+    },
+    {
+     "by": 1794786885470,
+     "done": false,
+     "id": "todo_eaafa9",
+     "task": "Cancel legacy seats",
+     "who": "carlos"
+    }
+   ],
+   "status": "wip",
+   "title": "Internal AI tooling rollout",
+   "updated_at": 1793577285470
+  },
+  {
+   "description": "Light brand refresh. New typography and color tokens.",
+   "id": "proj_e869bb",
+   "items": [
+    {
+     "by": 1792713285470,
+     "done": true,
+     "id": "todo_cf1cd1",
+     "task": "Update marketing site",
+     "who": "betty"
+    },
+    {
+     "by": 1793145285470,
+     "done": true,
+     "id": "todo_ec3312",
+     "task": "Roll new logo to all repos",
+     "who": "dan"
+    }
+   ],
+   "status": "wrapped",
+   "title": "Q2 brand refresh",
+   "updated_at": 1793577285470
+  },
+  {
+   "description": "Reduce time-to-first-value from 7 days to 2.",
+   "id": "proj_828748",
+   "items": [
+    {
+     "by": 1793836485470,
+     "done": false,
+     "id": "todo_5d9f01",
+     "task": "Interview 5 recent signups",
+     "who": "carlos"
+    },
+    {
+     "by": 1794009285470,
+     "done": false,
+     "id": "todo_6bf0ca",
+     "task": "Audit current funnel drop-off",
+     "who": "betty"
+    }
+   ],
+   "status": "kickoff",
+   "title": "Customer onboarding redesign",
+   "updated_at": 1793577285470
+  },
+  {
+   "description": "Move from manual schedule to PagerDuty.",
+   "id": "proj_bd0d1e",
+   "items": [
+    {
+     "by": 1790985285470,
+     "done": false,
+     "id": "todo_0fa167",
+     "task": "Get budget approval",
+     "who": "carlos"
+    }
+   ],
+   "status": "dropped",
+   "title": "On-call rotation revamp",
+   "updated_at": 1793577285470
+  }
+ ]
+}

@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .venv/
+snapshots.sqlite
+.gstack/
+backups/

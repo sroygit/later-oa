@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects</title>
+<style>
+  :root {
+    --line: #e2e2e6; --bg: #fff; --ink: #1b1b1f; --mute: #6b6b74; --accent: #2d5bd7;
+    --kickoff: #6b6b74; --wip: #2d5bd7; --blocked: #c23b32; --wrapped: #2e7d4f; --dropped: #9a9aa2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 18px;
+    padding: 14px 22px; border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  nav button {
+    border: 0; background: none; font: inherit; color: var(--mute);
+    padding: 4px 2px; cursor: pointer; border-bottom: 2px solid transparent;
+  }
+  nav button.on { color: var(--ink); border-bottom-color: var(--accent); }
+  #err {
+    display: none; margin: 0; padding: 9px 22px; background: #fdecea;
+    color: #8c2b24; border-bottom: 1px solid #f3c9c4; font-size: 14px;
+  }
+  main { padding: 18px 22px 60px; }
+  .cols { display: flex; gap: 28px; align-items: flex-start; }
+  .side { flex: 0 0 260px; }
+  .body { flex: 1; min-width: 0; }
+  h2 { font-size: 16px; margin: 0 0 2px; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em;
+       color: var(--mute); margin: 26px 0 8px; font-weight: 600; }
+  .mute { color: var(--mute); font-size: 13px; }
+  ul.plist { list-style: none; margin: 0; padding: 0; }
+  ul.plist button {
+    width: 100%; text-align: left; border: 0; background: none; font: inherit;
+    padding: 7px 9px; border-radius: 6px; cursor: pointer;
+    display: flex; justify-content: space-between; gap: 8px; align-items: center;
+  }
+  ul.plist button:hover { background: #f4f4f7; }
+  ul.plist button.on { background: #ecf0fb; color: var(--accent); font-weight: 600; }
+  ul.plist span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600;
+    color: #fff; background: var(--kickoff); border-radius: 10px; padding: 2px 7px; white-space: nowrap;
+  }
+  .s-kickoff { background: var(--kickoff); } .s-wip { background: var(--wip); }
+  .s-blocked { background: var(--blocked); } .s-wrapped { background: var(--wrapped); }
+  .s-dropped { background: var(--dropped); }
+  input, select, textarea, button.btn { font: inherit; color: inherit; }
+  input, select, textarea {
+    border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: #fff;
+  }
+  textarea { resize: vertical; }
+  button.btn {
+    border: 1px solid var(--line); background: #f7f7f9; border-radius: 6px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  button.btn:hover { background: #ededf1; }
+  button.btn.go { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.btn.go:hover { background: #2449ad; }
+  button.x {
+    border: 0; background: none; color: var(--mute); cursor: pointer;
+    font-size: 15px; padding: 2px 6px; border-radius: 4px;
+  }
+  button.x:hover { background: #fdecea; color: var(--blocked); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); font-weight: 600; }
+  td.num, th.num { text-align: right; padding-right: 18px; }
+  .todo td:first-child { width: 26px; padding-right: 0; }
+  .todo td:last-child { width: 32px; text-align: right; padding-right: 0; }
+  .done { color: var(--mute); text-decoration: line-through; }
+  .late { color: var(--blocked); }
+  .flag { color: var(--blocked); font-weight: 600; }
+  details.new { margin-top: 18px; }
+  details.new summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+  .form { display: grid; gap: 7px; margin-top: 10px; }
+  .row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .row input[name=task] { flex: 1 1 220px; }
+  .hide { display: none; }
+  tr.pend { opacity: .5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Projects</h1>
+  <nav>
+    <button id="tab-p" class="on" onclick="show('p')">Projects</button>
+    <button id="tab-s" onclick="show('s')">Portfolio</button>
+  </nav>
+  <button class="btn" style="margin-left:auto" onclick="refresh()">Refresh</button>
+  <span class="mute" id="stamp"></span>
+</header>
+<p id="err"></p>
+
+<main>
+  <section id="view-p">
+    <div class="cols">
+      <div class="side">
+        <ul class="plist" id="plist"></ul>
+        <details class="new">
+          <summary>New project</summary>
+          <div class="form">
+            <input id="n-title" placeholder="Title">
+            <textarea id="n-desc" rows="2" placeholder="Description"></textarea>
+            <select id="n-status"></select>
+            <button class="btn go" onclick="createProject()">Create</button>
+          </div>
+        </details>
+      </div>
+      <div class="body" id="detail"></div>
+    </div>
+  </section>
+
+  <section id="view-s" class="hide">
+    <table id="summary"></table>
+    <h3 id="late-head">Overdue todos</h3>
+    <table id="late"></table>
+  </section>
+</main>
+
+<script>
+const STATUSES = ["kickoff", "wip", "blocked", "wrapped", "dropped"];
+let projects = [], picked = null, tab = "p", drafts = 0;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g,
+  c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+const pill = s => `<span class="pill s-${esc(s)}">${esc(s || "?")}</span>`;
+
+function fail(msg) {
+  const e = $("err");
+  if (!msg) { e.style.display = "none"; return; }
+  e.textContent = msg;
+  e.style.display = "block";
+}
+
+async function call(method, path, body) {
+  const opt = { method };
+  if (body !== undefined) {
+    opt.headers = { "Content-Type": "application/json" };
+    opt.body = JSON.stringify(body);
+  }
+  const r = await fetch(path, opt);
+  const text = await r.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (_) { data = null; }
+  if (!r.ok) throw new Error((data && (data.detail || data.error)) || text || ("HTTP " + r.status));
+  return data;
+}
+
+// ---- shapes ---------------------------------------------------------------
+// GET /ui/* comes pre-normalised, but the POST routes answer with the API's own
+// row (epoch-ms `by`/`updated_at`, no `due`/`updated`). Everything that lands in
+// `projects` goes through these, so the page only ever sees one shape.
+const dayOf = v => {
+  if (v === null || v === undefined || v === "") return null;
+  const d = new Date(typeof v === "number" ? v : Number(v));
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+};
+const asTodo = t => ({
+  id: t.id,
+  task: String(t.task == null ? "" : t.task),
+  who: String(t.who == null ? "" : t.who),
+  done: !!t.done,
+  due: "due" in t ? t.due : dayOf(t.by),
+});
+const asProject = p => ({
+  id: p.id,
+  title: String(p.title == null ? "" : p.title),
+  description: p.description || "",
+  status: p.status || null,
+  updated: "updated" in p ? p.updated : dayOf(p.updated_at),
+  items: (p.items || []).map(asTodo),
+});
+
+const projectOf = pid => projects.find(p => p.id === pid);
+
+function render() {
+  drawList();
+  drawDetail();
+  $("stamp").textContent = projects.length + " projects";
+}
+
+// Optimistic write: the caller has already changed local state, so paint it,
+// then send. On success `patch` folds in the server's own copy of the row; on
+// failure `undo` puts the change back and the error bar says why. Undo is
+// per-change rather than a whole-project snapshot, so two writes in flight
+// cannot clobber each other.
+async function write(send, patch, undo) {
+  fail("");
+  render();
+  try {
+    const res = await send();
+    if (patch) patch(res);
+  } catch (e) {
+    undo();
+    if (isStale(e)) { await recoverFromReset(); return; }
+    fail(e.message);
+  }
+  render();
+}
+
+// The API is in memory and reseeds on restart with fresh ids. A "no such project"
+// on a write means our ids are stale: reload the list, re-select by title, and say so.
+const isStale = e => /no such project/i.test(e && e.message || "");
+
+async function recoverFromReset() {
+  const oldTitle = (projects.find(p => p.id === picked) || {}).title;
+  try {
+    await load();
+    const again = projects.find(p => p.title === oldTitle);
+    if (again) { picked = again.id; render(); }
+    fail("The API was reset (its project ids changed). List reloaded; please redo that change.");
+  } catch (e) {
+    fail("The API was reset and the reload failed: " + e.message);
+  }
+}
+
+function show(which) {
+  tab = which;
+  for (const t of ["p", "s"]) {
+    $("tab-" + t).classList.toggle("on", t === which);
+    $("view-" + t).classList.toggle("hide", t !== which);
+  }
+  if (which === "s") loadSummary();
+}
+
+// The only full re-fetch left: first paint, after creating a project, and the
+// Refresh button, which is how other people's changes get pulled in.
+async function load() {
+  projects = (await call("GET", "/ui/projects")).map(asProject);
+  if (!projects.some(p => p.id === picked)) picked = projects.length ? projects[0].id : null;
+  render();
+  if (tab === "s") loadSummary();
+}
+
+function refresh() {
+  fail("");
+  load().catch(e => fail(e.message));
+}
+
+function drawList() {
+  $("plist").innerHTML = projects.map(p => `
+    <li><button class="${p.id === picked ? "on" : ""}" onclick="pick('${p.id}')">
+      <span class="t">${esc(p.title)}</span>${pill(p.status)}
+    </button></li>`).join("") || `<li class="mute">No projects yet.</li>`;
+}
+
+function pick(id) { picked = id; drawList(); drawDetail(); }
+
+function drawDetail() {
+  const p = projectOf(picked);
+  if (!p) { $("detail").innerHTML = `<p class="mute">Pick a project, or create one.</p>`; return; }
+  // Re-rendering replaces the add-todo inputs, so carry half-typed values over.
+  const kept = ["t-task", "t-who", "t-due"].map(id => ($(id) ? $(id).value : ""));
+  const items = p.items.slice().sort((a, b) => (a.done - b.done) || String(a.due).localeCompare(String(b.due)));
+  const rows = items.map(t => `
+    <tr class="todo ${t.pending ? "pend" : ""}">
+      <td><input type="checkbox" ${t.done ? "checked" : ""} ${t.pending ? "disabled" : ""}
+           onchange="markTodo('${p.id}','${t.id}', this.checked)"></td>
+      <td class="${t.done ? "done" : ""}">${esc(t.task)}</td>
+      <td class="mute">${esc(t.who || "unassigned")}</td>
+      <td class="mute ${!t.done && t.due && t.due < today() ? "late" : ""}">${esc(t.due || "—")}</td>
+      <td><button class="x" title="Delete" ${t.pending ? "disabled" : ""}
+           onclick="delTodo('${p.id}','${t.id}')">&times;</button></td>
+    </tr>`).join("");
+
+  $("detail").innerHTML = `
+    <h2>${esc(p.title)}</h2>
+    <p class="mute">${esc(p.id)} &middot; updated ${esc(p.updated || "—")}</p>
+    <div class="row">
+      <select id="st">${STATUSES.map(s =>
+        `<option ${s === p.status ? "selected" : ""}>${s}</option>`).join("")}</select>
+      <button class="btn" onclick="saveStatus('${p.id}')">Save status</button>
+    </div>
+    ${p.description ? `<p>${esc(p.description)}</p>` : ""}
+    <h3>Todos (${items.filter(t => !t.done).length} open / ${items.length})</h3>
+    <table>
+      ${items.length ? `<tbody>${rows}</tbody>` : `<tr><td class="mute">No todos yet.</td></tr>`}
+    </table>
+    <div class="row">
+      <input name="task" id="t-task" placeholder="Task">
+      <input id="t-who" placeholder="Who" size="12">
+      <input id="t-due" type="date">
+      <button class="btn go" onclick="addTodo('${p.id}')">Add todo</button>
+    </div>`;
+  ["t-task", "t-who", "t-due"].forEach((id, i) => { if (kept[i] && $(id)) $(id).value = kept[i]; });
+}
+
+// Creating a project still reloads: it needs the server's id and list ordering.
+function createProject() {
+  const title = $("n-title").value.trim();
+  if (!title) { fail("Title is required."); return; }
+  fail("");
+  call("POST", "/ui/projects",
+    { title, description: $("n-desc").value, status: $("n-status").value })
+    .then(made => {
+      picked = made.id;
+      $("n-title").value = ""; $("n-desc").value = "";
+      return load();
+    })
+    .catch(e => fail(e.message));
+}
+
+function saveStatus(pid) {
+  const p = projectOf(pid);
+  if (!p) return;
+  const status = $("st").value, was = p.status;
+  p.status = status;
+  return write(
+    () => call("POST", `/ui/projects/${pid}/status`, { status }),
+    res => {
+      const pending = p.items.filter(t => t.pending);   // keep todos still in flight
+      Object.assign(p, asProject(res));
+      p.items.push(...pending);
+    },
+    () => { p.status = was; },
+  );
+}
+
+function markTodo(pid, tid, done) {
+  const p = projectOf(pid), t = p && p.items.find(i => i.id === tid);
+  if (!t) return;
+  const was = t.done;
+  t.done = done;
+  return write(
+    () => call("POST", `/ui/projects/${pid}/todos/${tid}/done`, { done }),
+    res => Object.assign(t, asTodo(res)),
+    () => { t.done = was; },
+  );
+}
+
+function addTodo(pid) {
+  const p = projectOf(pid);
+  const task = $("t-task").value.trim();
+  if (!task) { fail("Task is required."); return; }
+  if (!p) return;
+  // Shown straight away under a placeholder id; its row stays inert until the
+  // server hands back the real one.
+  const draft = {
+    id: "draft_" + (++drafts), task, who: $("t-who").value,
+    done: false, due: $("t-due").value || null, pending: true,
+  };
+  p.items.push(draft);
+  $("t-task").value = ""; $("t-who").value = ""; $("t-due").value = "";
+  return write(
+    () => call("POST", `/ui/projects/${pid}/todos`,
+      { task: draft.task, who: draft.who, due: draft.due }),
+    res => { Object.assign(draft, asTodo(res)); delete draft.pending; },
+    () => { const i = p.items.indexOf(draft); if (i >= 0) p.items.splice(i, 1); },
+  );
+}
+
+function delTodo(pid, tid) {
+  const p = projectOf(pid);
+  const at = p ? p.items.findIndex(t => t.id === tid) : -1;
+  if (at < 0) return;
+  const gone = p.items.splice(at, 1)[0];
+  return write(
+    () => call("DELETE", `/ui/projects/${pid}/todos/${tid}`),
+    res => { if (res && res.removed && res.removed !== tid) refresh(); },
+    () => p.items.splice(Math.min(at, p.items.length), 0, gone),
+  );
+}
+
+async function loadSummary() {
+  fail("");
+  try {
+    const s = await call("GET", "/ui/summary");
+    $("summary").innerHTML = `
+      <thead><tr>
+        <th>Project</th><th>Status</th><th class="num">Open</th><th class="num">Done</th>
+        <th class="num">Overdue</th><th>Updated</th><th>Changed this week</th><th>Stuck</th>
+      </tr></thead>
+      <tbody>${s.rows.map(r => `<tr>
+        <td>${esc(r.title)}</td>
+        <td>${pill(r.status)}</td>
+        <td class="num">${r.open}</td>
+        <td class="num">${r.done}</td>
+        <td class="num ${r.overdue ? "flag" : ""}">${r.overdue}</td>
+        <td class="mute">${esc(r.updated_at || "—")}</td>
+        <td>${r.changed_this_week ? "yes" : ""}</td>
+        <td class="flag">${r.stuck ? "stuck" : ""}</td>
+      </tr>`).join("")}</tbody>`;
+    $("late-head").textContent = `Overdue todos (${s.overdue.length})`;
+    $("late").innerHTML = s.overdue.length
+      ? `<thead><tr><th>Task</th><th>Who</th><th>Due</th><th>Project</th></tr></thead>
+         <tbody>${s.overdue.map(t => `<tr>
+           <td>${esc(t.task)}</td>
+           <td class="mute">${esc(t.who || "unassigned")}</td>
+           <td class="late">${esc(t.due || "—")}</td>
+           <td class="mute">${esc(t.project_title)}</td>
+         </tr>`).join("")}</tbody>`
+      : `<tr><td class="mute">Nothing overdue.</td></tr>`;
+  } catch (e) { fail(e.message); }
+}
+
+$("n-status").innerHTML = STATUSES.map(s => `<option>${s}</option>`).join("");
+load().catch(e => fail(e.message + " — is the shim running? .venv/bin/uvicorn webhook:app --port 8787"));
+</script>
+</body>
+</html>

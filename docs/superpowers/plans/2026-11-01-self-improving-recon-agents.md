@@ -218,7 +218,7 @@ This is a dry run to verify your setup. Follow the protocol for the single endpo
 Run: `cat recon/dryrun/health.md && tail -1 recon/RUNLOG.md`
 Expected: a findings file with `# Findings: dryrun (round 0)`, at least one `### Attempt` block showing `HTTP 200` and `{"status":"ok"}`, a `## Could not determine` section, and one new run log line starting with `- ` and containing `prober | slice=dryrun`.
 
-If the Agent tool reports it cannot find `prober`, check that `.claude/agents/prober.md` is under the working directory and the frontmatter has no tab characters.
+If the Agent tool reports it cannot find `prober`, the session started before the file existed and agent types load at session start. Use the fallback in `recon/RUNBOOK.md`: `subagent_type: "general-purpose"`, `model: "sonnet"`, and the definition body inlined above the dispatch block. The same fallback applies to the synthesizer and reviewer dry runs with `model: "fable"`.
 
 - [ ] **Step 5: Commit**
 
