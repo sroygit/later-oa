@@ -1,6 +1,6 @@
 # Later Projects API — four personas, one client
 
-Take-home for Later's AI Automation Engineer role. 1.5 hour cap. See `DECISIONS.md` for what was built, skipped, and why; `API_NOTES.md` for the docs the API never had.
+Take-home for Later's AI Automation Engineer role. 1.5 hour cap. Please see `DECISIONS.md` for what was built, skipped, and why; `API_NOTES.md` for the docs the API never had.
 
 ## Setup
 
