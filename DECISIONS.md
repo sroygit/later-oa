@@ -54,5 +54,6 @@ One thin client, four surfaces. `projects_client.py` absorbs every quirk (path-s
 
 ## What I'd do with a full day
 
+- **A contract check derived from `API_NOTES.md`.** Every confirmed claim (nested route shapes, the status enum and its case sensitivity, the yes/no flag, the page cap of 5, the three distinct 404/405 messages, only touch moving `updated_at`) as a pass/fail assertion against the live API, one fixture, a few seconds. Run it before every demo and on the digest's cron, and only re-run the probers when it goes red. Today the only way to ask "did the API change" is to re-dispatch the probers, which is slow and gives prose, not a verdict.
 - **Fix the recon prompt before the probers run, not after.** The reviewer's rewrite correctly says "sweep path shapes before field names"; with a day I'd run a third round and measure whether the rewritten prompt actually finds nested routes faster on a fresh API.
 - **A timezone for natural-language dates.** `parse_due` is UTC-only. Andy's Slack message saying "Friday" means Friday in Andy's timezone, and the API has no notion of one; a day would buy a per-caller `tz` and an honest answer about what midnight means.
